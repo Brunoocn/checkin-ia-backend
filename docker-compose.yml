@@ -1,0 +1,18 @@
+version: '3.9'
+name: checkin-ia-backend
+
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=$PG_DATABASE_PASSWORD
+      - POSTGRES_USER=$PG_DATABASE_USER
+      - POSTGRES_DB=$PG_DATABASE_NAME
+    ports:
+      - "$DATABASE_DOCKER_PORT:$DATABASE_DOCKER_PORT"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "--username", "postgres" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
