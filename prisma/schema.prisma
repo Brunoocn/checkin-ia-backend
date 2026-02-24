@@ -15,30 +15,94 @@ enum Role {
   USER
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 model Company {
-  id        String    @id @default(uuid())
-  name      String
-  cnpj      String?   @unique
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  users     User[]
+  id            String         @id @default(uuid())
+  name          String
+  cnpj          String?        @unique
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  users         User[]
+  workSchedules WorkSchedule[]
+  timeRecords   TimeRecord[]
 
   @@map("companies")
 }
 
 model User {
-  id        String    @id @default(uuid())
-  name      String
-  email     String    @unique
-  password  String
-  role      Role      @default(USER)
-  avatarUrl String?   @map("avatar_url")
-  companyId String?   @map("company_id")
-  company   Company?  @relation(fields: [companyId], references: [id])
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  id                String        @id @default(uuid())
+  name              String
+  email             String        @unique
+  password          String
+  role              Role          @default(USER)
+  avatarUrl         String?       @map("avatar_url")
+  companyId         String?       @map("company_id")
+  company           Company?      @relation(fields: [companyId], references: [id])
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
+  timeRecords       TimeRecord[]  @relation("UserTimeRecords")
+  closedTimeRecords TimeRecord[]  @relation("ClosedBy")
+  registeredBreaks  BreakRecord[] @relation("BreakRegisteredBy")
 
   @@map("users")
+}
+
+model WorkSchedule {
+  id        String    @id @default(uuid())
+  companyId String    @map("company_id")
+  company   Company   @relation(fields: [companyId], references: [id])
+  dayOfWeek DayOfWeek @map("day_of_week")
+  isWorkday Boolean   @default(true) @map("is_workday")
+  startTime String?   @map("start_time")
+  endTime   String?   @map("end_time")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@unique([companyId, dayOfWeek])
+  @@map("work_schedules")
+}
+
+model TimeRecord {
+  id         String        @id @default(uuid())
+  userId     String        @map("user_id")
+  user       User          @relation("UserTimeRecords", fields: [userId], references: [id])
+  companyId  String        @map("company_id")
+  company    Company       @relation(fields: [companyId], references: [id])
+  date       DateTime      @map("date") @db.Date
+  clockIn    DateTime      @map("clock_in")
+  clockOut   DateTime?     @map("clock_out")
+  closedById String?       @map("closed_by_id")
+  closedBy   User?         @relation("ClosedBy", fields: [closedById], references: [id])
+  breaks     BreakRecord[]
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+  deletedAt  DateTime?     @map("deleted_at")
+
+  @@unique([userId, date])
+  @@map("time_records")
+}
+
+model BreakRecord {
+  id             String     @id @default(uuid())
+  timeRecordId   String     @map("time_record_id")
+  timeRecord     TimeRecord @relation(fields: [timeRecordId], references: [id])
+  startedAt      DateTime   @map("started_at")
+  endedAt        DateTime?  @map("ended_at")
+  registeredById String?    @map("registered_by_id")
+  registeredBy   User?      @relation("BreakRegisteredBy", fields: [registeredById], references: [id])
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  @@map("break_records")
 }
