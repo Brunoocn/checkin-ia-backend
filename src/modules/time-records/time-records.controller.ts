@@ -24,9 +24,6 @@ import { TimeRecordsService } from './time-records.service';
 export class TimeRecordsController {
   constructor(private readonly timeRecordsService: TimeRecordsService) {}
 
-  // --- Rotas do funcionário (self-service) ---
-  // Rotas específicas devem vir antes das parametrizadas
-
   @Post('clock-in')
   @Roles(Role.ADMIN, Role.USER)
   clockIn(@CurrentUser() user: AuthenticatedUser) {
@@ -59,11 +56,12 @@ export class TimeRecordsController {
 
   @Get('me/:date')
   @Roles(Role.ADMIN, Role.USER)
-  findMyRecordByDate(@CurrentUser() user: AuthenticatedUser, @Param('date') date: string) {
+  findMyRecordByDate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('date') date: string,
+  ) {
     return this.timeRecordsService.findByUserAndDate(user.id, date);
   }
-
-  // --- Rotas administrativas ---
 
   @Get()
   @Roles(Role.ADMIN)
@@ -73,7 +71,10 @@ export class TimeRecordsController {
 
   @Post()
   @Roles(Role.ADMIN)
-  adminCreate(@CurrentUser() admin: AuthenticatedUser, @Body() dto: AdminCreateTimeRecordDto) {
+  adminCreate(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Body() dto: AdminCreateTimeRecordDto,
+  ) {
     return this.timeRecordsService.adminCreate(admin, dto);
   }
 

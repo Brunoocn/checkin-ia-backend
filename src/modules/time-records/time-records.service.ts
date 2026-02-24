@@ -16,19 +16,21 @@ import { AdminSetClockOutDto } from './dto/admin-set-clock-out.dto';
 
 function toUtcDate(input: Date | string): Date {
   const d = new Date(input);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
 }
 
 @Injectable()
 export class TimeRecordsService {
   constructor(private prisma: PrismaService) {}
 
-  // --- Métodos do funcionário (USER) ---
-
   async clockIn(user: AuthenticatedUser) {
     try {
       if (!user.companyId) {
-        throw new ForbiddenException('Usuário não está vinculado a uma empresa.');
+        throw new ForbiddenException(
+          'Usuário não está vinculado a uma empresa.',
+        );
       }
 
       const today = toUtcDate(new Date());
@@ -38,7 +40,9 @@ export class TimeRecordsService {
       });
 
       if (existing) {
-        throw new ConflictException('Já existe um registro de ponto para hoje.');
+        throw new ConflictException(
+          'Já existe um registro de ponto para hoje.',
+        );
       }
 
       return await this.prisma.timeRecord.create({
@@ -65,7 +69,9 @@ export class TimeRecordsService {
       });
 
       if (!record) {
-        throw new NotFoundException('Nenhum registro de ponto encontrado para hoje.');
+        throw new NotFoundException(
+          'Nenhum registro de ponto encontrado para hoje.',
+        );
       }
 
       if (record.clockOut) {
@@ -93,7 +99,9 @@ export class TimeRecordsService {
       });
 
       if (!record) {
-        throw new NotFoundException('Nenhum registro de ponto encontrado para hoje.');
+        throw new NotFoundException(
+          'Nenhum registro de ponto encontrado para hoje.',
+        );
       }
 
       if (record.clockOut) {
@@ -127,7 +135,9 @@ export class TimeRecordsService {
       });
 
       if (!record) {
-        throw new NotFoundException('Nenhum registro de ponto encontrado para hoje.');
+        throw new NotFoundException(
+          'Nenhum registro de ponto encontrado para hoje.',
+        );
       }
 
       const openBreak = await this.prisma.breakRecord.findFirst({
@@ -157,7 +167,9 @@ export class TimeRecordsService {
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao buscar registros de ponto.');
+      throw new InternalServerErrorException(
+        'Erro ao buscar registros de ponto.',
+      );
     }
   }
 
@@ -171,17 +183,19 @@ export class TimeRecordsService {
       });
 
       if (!record) {
-        throw new NotFoundException('Registro de ponto não encontrado para a data informada.');
+        throw new NotFoundException(
+          'Registro de ponto não encontrado para a data informada.',
+        );
       }
 
       return record;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao buscar registro de ponto.');
+      throw new InternalServerErrorException(
+        'Erro ao buscar registro de ponto.',
+      );
     }
   }
-
-  // --- Métodos do administrador (ADMIN) ---
 
   async findAll(admin: AuthenticatedUser) {
     try {
@@ -196,7 +210,9 @@ export class TimeRecordsService {
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao buscar registros de ponto.');
+      throw new InternalServerErrorException(
+        'Erro ao buscar registros de ponto.',
+      );
     }
   }
 
@@ -205,7 +221,9 @@ export class TimeRecordsService {
       return await this.findRecordInCompany(recordId, admin.companyId);
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao buscar registro de ponto.');
+      throw new InternalServerErrorException(
+        'Erro ao buscar registro de ponto.',
+      );
     }
   }
 
@@ -227,7 +245,9 @@ export class TimeRecordsService {
       });
 
       if (existing) {
-        throw new ConflictException('Já existe um registro de ponto para este usuário nesta data.');
+        throw new ConflictException(
+          'Já existe um registro de ponto para este usuário nesta data.',
+        );
       }
 
       let clockOut: Date | null = null;
@@ -254,7 +274,9 @@ export class TimeRecordsService {
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao criar registro de ponto.');
+      throw new InternalServerErrorException(
+        'Erro ao criar registro de ponto.',
+      );
     }
   }
 
@@ -286,7 +308,11 @@ export class TimeRecordsService {
     }
   }
 
-  async adminAddBreak(admin: AuthenticatedUser, recordId: string, dto: AdminAddBreakDto) {
+  async adminAddBreak(
+    admin: AuthenticatedUser,
+    recordId: string,
+    dto: AdminAddBreakDto,
+  ) {
     try {
       const record = await this.findRecordInCompany(recordId, admin.companyId);
 
@@ -305,7 +331,9 @@ export class TimeRecordsService {
           where: { timeRecordId: record.id, endedAt: null },
         });
         if (openBreak) {
-          throw new ConflictException('Já existe uma pausa em aberto neste registro.');
+          throw new ConflictException(
+            'Já existe uma pausa em aberto neste registro.',
+          );
         }
       }
 
@@ -340,7 +368,9 @@ export class TimeRecordsService {
         throw new NotFoundException('Pausa não encontrada neste registro.');
       }
 
-      const startedAt = dto.startedAt ? new Date(dto.startedAt) : breakRecord.startedAt;
+      const startedAt = dto.startedAt
+        ? new Date(dto.startedAt)
+        : breakRecord.startedAt;
       const endedAt = dto.endedAt ? new Date(dto.endedAt) : breakRecord.endedAt;
 
       if (endedAt && endedAt <= startedAt) {
@@ -356,8 +386,6 @@ export class TimeRecordsService {
       throw new InternalServerErrorException('Erro ao editar pausa.');
     }
   }
-
-  // --- Helpers privados ---
 
   private async findRecordInCompany(recordId: string, companyId: string) {
     const record = await this.prisma.timeRecord.findFirst({
