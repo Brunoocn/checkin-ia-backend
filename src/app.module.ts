@@ -3,7 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { DatabaseModule } from './modules/database/database.module';
+import { TimeRecordsModule } from './modules/time-records/time-records.module';
 import { UsersModule } from './modules/users/users.module';
+import { WorkSchedulesModule } from './modules/work-schedules/work-schedules.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     UsersModule,
     CompaniesModule,
+    WorkSchedulesModule,
+    TimeRecordsModule,
   ],
   controllers: [],
   providers: [],
