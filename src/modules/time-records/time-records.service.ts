@@ -25,7 +25,7 @@ function toUtcDate(input: Date | string): Date {
 export class TimeRecordsService {
   constructor(private prisma: PrismaService) {}
 
-  async clockIn(user: AuthenticatedUser) {
+  async punch(user: AuthenticatedUser) {
     try {
       if (!user.companyId) {
         throw new ForbiddenException(
@@ -34,64 +34,7 @@ export class TimeRecordsService {
       }
 
       const today = toUtcDate(new Date());
-
-      const existing = await this.prisma.timeRecord.findFirst({
-        where: { userId: user.id, date: today, deletedAt: null },
-      });
-
-      if (existing) {
-        throw new ConflictException(
-          'Já existe um registro de ponto para hoje.',
-        );
-      }
-
-      return await this.prisma.timeRecord.create({
-        data: {
-          userId: user.id,
-          companyId: user.companyId,
-          date: today,
-          clockIn: new Date(),
-        },
-        include: { breaks: true },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao registrar entrada.');
-    }
-  }
-
-  async clockOut(user: AuthenticatedUser) {
-    try {
-      const today = toUtcDate(new Date());
-
-      const record = await this.prisma.timeRecord.findFirst({
-        where: { userId: user.id, date: today, deletedAt: null },
-      });
-
-      if (!record) {
-        throw new NotFoundException(
-          'Nenhum registro de ponto encontrado para hoje.',
-        );
-      }
-
-      if (record.clockOut) {
-        throw new ConflictException('O registro de ponto já foi encerrado.');
-      }
-
-      return await this.prisma.timeRecord.update({
-        where: { id: record.id },
-        data: { clockOut: new Date() },
-        include: { breaks: true },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao registrar saída.');
-    }
-  }
-
-  async startBreak(user: AuthenticatedUser) {
-    try {
-      const today = toUtcDate(new Date());
+      const now = new Date();
 
       const record = await this.prisma.timeRecord.findFirst({
         where: { userId: user.id, date: today, deletedAt: null },
@@ -99,62 +42,52 @@ export class TimeRecordsService {
       });
 
       if (!record) {
-        throw new NotFoundException(
-          'Nenhum registro de ponto encontrado para hoje.',
-        );
+        return await this.prisma.timeRecord.create({
+          data: {
+            userId: user.id,
+            companyId: user.companyId,
+            date: today,
+            clockIn: now,
+          },
+          include: { breaks: true },
+        });
       }
 
-      if (record.clockOut) {
-        throw new ConflictException('O registro de ponto já foi encerrado.');
+      if (!record.clockOut) {
+        return await this.prisma.timeRecord.update({
+          where: { id: record.id },
+          data: { clockOut: now },
+          include: { breaks: true },
+        });
       }
 
-      if (record.breaks.length > 0) {
-        throw new ConflictException(
-          'Existe uma pausa em andamento. Finalize-a antes de iniciar outra.',
-        );
-      }
-
-      return await this.prisma.breakRecord.create({
-        data: {
-          timeRecordId: record.id,
-          startedAt: new Date(),
-        },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao iniciar pausa.');
-    }
-  }
-
-  async endBreak(user: AuthenticatedUser) {
-    try {
-      const today = toUtcDate(new Date());
-
-      const record = await this.prisma.timeRecord.findFirst({
-        where: { userId: user.id, date: today, deletedAt: null },
-      });
-
-      if (!record) {
-        throw new NotFoundException(
-          'Nenhum registro de ponto encontrado para hoje.',
-        );
-      }
-
-      const openBreak = await this.prisma.breakRecord.findFirst({
-        where: { timeRecordId: record.id, endedAt: null },
-      });
+      const openBreak = record.breaks[0] ?? null;
 
       if (!openBreak) {
-        throw new NotFoundException('Nenhuma pausa em andamento.');
+        const breakStartedAt = record.clockOut;
+        await this.prisma.breakRecord.create({
+          data: { timeRecordId: record.id, startedAt: breakStartedAt },
+        });
+        return await this.prisma.timeRecord.update({
+          where: { id: record.id },
+          data: { clockOut: now },
+          include: { breaks: true },
+        });
       }
 
-      return await this.prisma.breakRecord.update({
+      const breakEndedAt = record.clockOut;
+      await this.prisma.breakRecord.update({
         where: { id: openBreak.id },
-        data: { endedAt: new Date() },
+        data: { endedAt: breakEndedAt },
+      });
+      return await this.prisma.timeRecord.update({
+        where: { id: record.id },
+        data: { clockOut: now },
+        include: { breaks: true },
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Erro ao encerrar pausa.');
+      throw new InternalServerErrorException('Erro ao registrar ponto.');
     }
   }
 

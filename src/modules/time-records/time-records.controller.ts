@@ -24,28 +24,10 @@ import { TimeRecordsService } from './time-records.service';
 export class TimeRecordsController {
   constructor(private readonly timeRecordsService: TimeRecordsService) {}
 
-  @Post('clock-in')
+  @Post('punch')
   @Roles(Role.ADMIN, Role.USER)
-  clockIn(@CurrentUser() user: AuthenticatedUser) {
-    return this.timeRecordsService.clockIn(user);
-  }
-
-  @Patch('clock-out')
-  @Roles(Role.ADMIN, Role.USER)
-  clockOut(@CurrentUser() user: AuthenticatedUser) {
-    return this.timeRecordsService.clockOut(user);
-  }
-
-  @Post('breaks/start')
-  @Roles(Role.ADMIN, Role.USER)
-  startBreak(@CurrentUser() user: AuthenticatedUser) {
-    return this.timeRecordsService.startBreak(user);
-  }
-
-  @Patch('breaks/end')
-  @Roles(Role.ADMIN, Role.USER)
-  endBreak(@CurrentUser() user: AuthenticatedUser) {
-    return this.timeRecordsService.endBreak(user);
+  punch(@CurrentUser() user: AuthenticatedUser) {
+    return this.timeRecordsService.punch(user);
   }
 
   @Get('me')
