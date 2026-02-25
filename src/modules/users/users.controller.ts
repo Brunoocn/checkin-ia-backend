@@ -39,20 +39,27 @@ export class UsersController {
 
   @Get(':id')
   @Roles(Role.ADMIN)
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUser) {
+    return this.usersService.findOne(id, admin);
   }
 
   @Patch(':id')
   @Roles(Role.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() admin: AuthenticatedUser,
+  ) {
+    return this.usersService.update(id, dto, admin);
   }
 
   @Delete(':id')
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
-  remove(@Param('id') id: string): Promise<void> {
-    return this.usersService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() admin: AuthenticatedUser,
+  ): Promise<void> {
+    return this.usersService.remove(id, admin);
   }
 }
