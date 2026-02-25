@@ -77,10 +77,10 @@ export class UsersService {
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, admin: AuthenticatedUser) {
     try {
       const user = await this.prisma.user.findFirst({
-        where: { id, deletedAt: null },
+        where: { id, companyId: admin.companyId, deletedAt: null },
         select: {
           id: true,
           name: true,
@@ -104,9 +104,9 @@ export class UsersService {
     }
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: string, dto: UpdateUserDto, admin: AuthenticatedUser) {
     try {
-      await this.findOne(id);
+      await this.findOne(id, admin);
 
       if (dto.password) {
         dto.password = await bcrypt.hash(dto.password, 10);
@@ -131,9 +131,9 @@ export class UsersService {
     }
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, admin: AuthenticatedUser): Promise<void> {
     try {
-      await this.findOne(id);
+      await this.findOne(id, admin);
       await this.prisma.user.update({
         where: { id },
         data: { deletedAt: new Date() },
